@@ -117,10 +117,10 @@ button:hover { background: var(--card-hover); color: var(--text); }
 /* The copy of the calendar for "Save as PDF". It uses the same light colors as print. */
 .pdf-export {
   --card: #fff; --text: #000; --muted: #555; --border: #ccc; --accent: #000;
-  width: 1000px; padding: 4px; background: #fff; color: #000; color-scheme: light;
+  box-sizing: border-box; padding: 4px; background: #fff; color: #000; color-scheme: light;
 }
 .pdf-export > h2 { margin: 0 0 8px; font-size: 22px; }
-.pdf-export .pdf-days { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+.pdf-export .pdf-days { display: grid; align-items: start; gap: 8px; }
 .pdf-export .cal-day { border-color: #999; }
 .pdf-export .timeline { background: #eee; }
 .pdf-export .timeline .block { background: #777; }

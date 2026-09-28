@@ -601,14 +601,43 @@ async function saveCalendarPdf() {
     const days = document.getElementById("calDays").cloneNode(true);
     days.removeAttribute("id");
     days.className = "pdf-days";
+    // Two rows of days. With 5 days or fewer, one row.
+    const count = days.children.length;
+    days.style.gridTemplateColumns = `repeat(${count > 5 ? Math.ceil(count / 2) : Math.max(count, 1)}, 1fr)`;
     page.append(title, days);
-    await html2pdf().set({
-      margin: 8,
-      filename: "calendar-october-2026.pdf",
+
+    // The PDF is always one A4 page. The library puts a picture as wide as the page
+    // on the page and cuts it into pages by height. If the days are too tall for one page,
+    // make the copy wider. Then the text in the PDF becomes smaller, but all of it fits.
+    const MARGIN = 8;
+    const PAGE_WIDTH = (297 - 2 * MARGIN) / 25.4 * 96; // in px
+    const MAX_RATIO = (210 - 2 * MARGIN) / (297 - 2 * MARGIN) * 0.98;
+    const holder = document.createElement("div");
+    holder.style.cssText = "position: fixed; left: -100000px; top: 0;";
+    page.style.width = PAGE_WIDTH + "px";
+    holder.appendChild(page);
+    document.body.appendChild(holder);
+    for (let i = 0; i < 10 && page.offsetHeight > page.offsetWidth * MAX_RATIO; i++) {
+      page.style.width = Math.ceil(page.offsetHeight / MAX_RATIO) + "px";
+    }
+    const width = page.offsetWidth;
+    const height = page.offsetHeight;
+    holder.remove();
+
+    // Step 1: draw the copy at its full width. The library draws a box as wide as
+    // the jsPDF page, so give it a page with the same size as the copy.
+    const mm = px => px * 25.4 / 96;
+    const canvas = await html2pdf().set({
+      margin: 0,
       html2canvas: { scale: 2, backgroundColor: "#fff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-      pagebreak: { avoid: ".cal-day" }
-    }).from(page).save();
+      jsPDF: { unit: "mm", format: [mm(width), mm(height) + 1], orientation: "landscape" }
+    }).from(page).toCanvas().get("canvas");
+    // Step 2: put the picture on one A4 page.
+    await html2pdf().set({
+      margin: MARGIN,
+      filename: "calendar-october-2026.pdf",
+      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }
+    }).from(canvas, "canvas").save();
   } catch (e) {
     // Without the library (for example, offline), the browser print dialog can save a PDF.
     alert("Не вдалося створити PDF. Відкриваю друк — оберіть «Зберегти як PDF».");

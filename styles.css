@@ -64,13 +64,14 @@ button:hover { background: var(--card-hover); color: var(--text); }
 .item-text { flex: 1; }
 .remove-btn { border: 0; background: transparent; padding: 0 4px; font-size: 16px; line-height: 1; color: var(--muted); }
 .remove-btn:hover { background: transparent; color: #ff6b6b; }
-.add-form { display: flex; gap: 8px; margin: 12px 0 4px; }
+/* On a narrow screen the text field is on its own row, so the form is not wider than the screen. */
+.add-form { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
 .add-form input[type="text"] {
-  flex: 1; width: auto; height: auto; padding: 8px 10px; font-size: 14px;
+  flex: 1 1 260px; min-width: 0; width: auto; height: auto; padding: 8px 10px; font-size: 14px;
   background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
 }
 .add-form select {
-  padding: 8px; font-size: 13px; background: var(--card); color: var(--text);
+  flex: 1 1 auto; min-width: 0; padding: 8px; font-size: 13px; background: var(--card); color: var(--text);
   border: 1px solid var(--border); border-radius: 8px;
 }
 .section-tools { float: right; display: inline-flex; gap: 2px; }

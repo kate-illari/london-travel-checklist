@@ -572,6 +572,52 @@ function restoreDays() {
   saveCal();
   renderCalendar();
 }
+
+// The PDF library is large, so the page loads it only when the user asks for a PDF.
+const PDF_LIB = "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js";
+function loadPdfLib() {
+  if (window.html2pdf) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = PDF_LIB;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function saveCalendarPdf() {
+  const btn = document.getElementById("saveCalPdf");
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "⏳ Готуємо PDF…";
+  try {
+    await loadPdfLib();
+    // A light copy of the calendar without the buttons and forms.
+    const page = document.createElement("div");
+    page.className = "pdf-export";
+    const title = document.createElement("h2");
+    title.textContent = "📅 Календар";
+    const days = document.getElementById("calDays").cloneNode(true);
+    days.removeAttribute("id");
+    days.className = "pdf-days";
+    page.append(title, days);
+    await html2pdf().set({
+      margin: 8,
+      filename: "calendar-october-2026.pdf",
+      html2canvas: { scale: 2, backgroundColor: "#fff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+      pagebreak: { avoid: ".cal-day" }
+    }).from(page).save();
+  } catch (e) {
+    // Without the library (for example, offline), the browser print dialog can save a PDF.
+    alert("Не вдалося створити PDF. Відкриваю друк — оберіть «Зберегти як PDF».");
+    window.print();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
 renderCalendar();
 
 /* ---------- Tabs ---------- */

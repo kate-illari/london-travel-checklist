@@ -374,8 +374,8 @@ const FIRST_REMOVABLE_DAY = "2026-10-12";
 // Known travel times. The night train goes past midnight, so it has one part on each day.
 // Times are local. 23:59 is the end of the day.
 const calDefaults = [
-  { id: "d-train-kyiv-1", day: "2026-10-06", start: "10:18", end: "23:59", text: "🚆 Потяг Київ → Будапешт (відправлення о 10:18)" },
-  { id: "d-train-kyiv-2", day: "2026-10-07", start: "00:00", end: "06:00", text: "🚆 Потяг Київ → Будапешт (прибуття о 6:00)" },
+  { id: "d-train-kyiv-1", day: "2026-10-06", start: "10:18", end: "23:59", text: "🚆 Відправлення потяга, Київ" },
+  { id: "d-train-kyiv-2", day: "2026-10-07", start: "00:00", end: "06:00", text: "🚆 Прибуття в Будапешт" },
   { id: "d-plane-bud-lon", day: "2026-10-08", start: "09:35", end: "11:10", text: "✈️ Літак Будапешт → Лондон" }
 ];
 

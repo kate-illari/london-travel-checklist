@@ -231,6 +231,7 @@ const packDefaults = [
     "Навушники"
   ]},
   { id: "clothes", title: "👕 Одяг", items: [
+    "Halloween costume",
     "Куртка від дощу",
     "Теплий светр / худі",
     "Зручне взуття для ходьби",

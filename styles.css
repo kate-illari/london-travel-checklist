@@ -79,11 +79,24 @@ button:hover { background: var(--card-hover); color: var(--text); }
 .section.editing [contenteditable] { outline: 1px dashed var(--accent); outline-offset: 2px; border-radius: 3px; cursor: text; }
 .icon-btn.remove-btn:hover { color: #ff6b6b; }
 .print-title { display: none; }
+/* The days stand side by side. Scroll the row horizontally to see more days. */
+#calDays {
+  display: flex; align-items: flex-start; gap: 8px; margin: 8px 0;
+  overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px;
+}
+.cal-day { flex: 0 0 236px; margin: 0; scroll-snap-align: start; }
 .cal-day.today { border-color: var(--accent); }
 .timeline { position: relative; height: 10px; margin: 9px 0 2px; background: #303540; border-radius: 99px; overflow: hidden; }
 .timeline .block { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: .85; }
 .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; margin-bottom: 4px; }
-.cal-event { display: flex; align-items: center; gap: 9px; padding: 7px 2px; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.3; }
+/* The time is on the first line, the text is on the second line, the buttons are on the right. */
+.cal-event {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: start; column-gap: 2px;
+  padding: 7px 2px; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.3;
+}
+.cal-event .cal-time { grid-column: 1; grid-row: 1; font-size: 12px; }
+.cal-event .item-text { grid-column: 1; grid-row: 2; overflow-wrap: anywhere; }
+.cal-event .icon-btn { grid-row: 1 / span 2; align-self: center; }
 .cal-time { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cal-event.overlap .cal-time { color: #ffa94d; }
 .cal-form {
@@ -97,7 +110,9 @@ button:hover { background: var(--card-hover); color: var(--text); }
   background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 6px;
 }
 .cal-form button { padding: 4px 10px; background: transparent; }
-.cal-form input[type="text"] { flex: 1 1 160px; min-width: 0; }
+.cal-form input[type="time"] { flex: 1 1 0; min-width: 0; }
+.cal-form input[type="text"] { flex: 1 1 100%; min-width: 0; }
+.cal-form button { flex: 1 1 auto; }
 
 @media print {
   :root {
@@ -116,6 +131,8 @@ button:hover { background: var(--card-hover); color: var(--text); }
   .print-title { display: block; font-size: 18pt; margin: 12px 0 6px; }
   .section { break-inside: avoid; border-color: #999; }
   .done { color: #555; }
+  #calDays { flex-wrap: wrap; overflow: visible; }
+  .cal-day { break-inside: avoid; }
   .timeline { background: #eee; }
   .timeline .block { background: #777; }
 }

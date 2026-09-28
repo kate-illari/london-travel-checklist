@@ -440,6 +440,8 @@ function eventFields(ev) {
 
 function renderCalendar() {
   const root = document.getElementById("calDays");
+  // Keep the horizontal scroll position when the days are drawn again.
+  const scrollLeft = root.scrollLeft;
   root.innerHTML = "";
   const today = todayKey();
   calDays.forEach(day => {
@@ -561,6 +563,7 @@ function renderCalendar() {
     root.appendChild(div);
   });
 
+  root.scrollLeft = scrollLeft;
   document.getElementById("restoreDays").style.display = cal.removedDays.length ? "" : "none";
 }
 

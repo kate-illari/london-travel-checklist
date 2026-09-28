@@ -18,6 +18,7 @@
   </div>
 
   <div class="panel" id="panel-trip" role="tabpanel">
+    <h2 class="print-title">🗺️ Маршрут</h2>
     <div class="progress">
       <strong><span id="count">0</span> / <span id="total">0</span> виконано</strong>
       <div class="bar"><div class="fill" id="fill"></div></div>
@@ -28,10 +29,12 @@
     <div class="actions">
       <button onclick="resetAll()">Скинути всі позначки</button>
       <button id="restoreTrip" onclick="restoreTrip()">Повернути видалені етапи</button>
+      <button onclick="window.print()">🖨️ Друкувати список</button>
     </div>
   </div>
 
   <div class="panel" id="panel-packing" role="tabpanel">
+    <h2 class="print-title">🧳 Речі</h2>
     <div class="progress">
       <strong><span id="packCount">0</span> / <span id="packTotal">0</span> спаковано</strong>
       <div class="bar"><div class="fill" id="packFill"></div></div>
@@ -47,6 +50,7 @@
 
     <div class="actions">
       <button onclick="resetPacking()">Скинути позначки речей</button>
+      <button onclick="window.print()">🖨️ Друкувати список</button>
     </div>
   </div>
 

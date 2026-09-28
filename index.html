@@ -15,6 +15,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="trip" id="tab-trip">🗺️ Маршрут</button>
     <button class="tab" role="tab" data-tab="packing" id="tab-packing">🧳 Речі</button>
+    <button class="tab" role="tab" data-tab="calendar" id="tab-calendar">📅 Календар</button>
   </div>
 
   <div class="panel" id="panel-trip" role="tabpanel">
@@ -51,6 +52,16 @@
     <div class="actions">
       <button onclick="resetPacking()">Скинути позначки речей</button>
       <button onclick="window.print()">🖨️ Друкувати список</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-calendar" role="tabpanel">
+    <h2 class="print-title">📅 Календар</h2>
+    <div id="calDays"></div>
+
+    <div class="actions">
+      <button id="restoreDays" onclick="restoreDays()">Повернути видалені дні</button>
+      <button onclick="window.print()">🖨️ Друкувати календар</button>
     </div>
   </div>
 

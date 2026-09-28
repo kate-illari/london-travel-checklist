@@ -79,6 +79,25 @@ button:hover { background: var(--card-hover); color: var(--text); }
 .section.editing [contenteditable] { outline: 1px dashed var(--accent); outline-offset: 2px; border-radius: 3px; cursor: text; }
 .icon-btn.remove-btn:hover { color: #ff6b6b; }
 .print-title { display: none; }
+.cal-day.today { border-color: var(--accent); }
+.timeline { position: relative; height: 10px; margin: 9px 0 2px; background: #303540; border-radius: 99px; overflow: hidden; }
+.timeline .block { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: .85; }
+.ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; margin-bottom: 4px; }
+.cal-event { display: flex; align-items: center; gap: 9px; padding: 7px 2px; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.3; }
+.cal-time { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cal-event.overlap .cal-time { color: #ffa94d; }
+.cal-form {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; border-top: 1px solid var(--border);
+  opacity: .45; transition: opacity .15s;
+}
+/* The form is dim until the user points at it or types in it. */
+.cal-form:hover, .cal-form:focus-within { opacity: 1; }
+.cal-form input {
+  width: auto; height: auto; padding: 4px 8px; font-size: 12px;
+  background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+}
+.cal-form button { padding: 4px 10px; background: transparent; }
+.cal-form input[type="text"] { flex: 1 1 160px; min-width: 0; }
 
 @media print {
   :root {
@@ -92,9 +111,11 @@ button:hover { background: var(--card-hover); color: var(--text); }
   * { color-scheme: light; }
   body { padding: 0; font-size: 12pt; }
   .countdown, .tabs, .actions, .add-form, .note, .progress,
-  .remove-btn, .section-tools { display: none !important; }
+  .remove-btn, .section-tools, .cal-form, .icon-btn { display: none !important; }
   /* Only the open tab prints. Each tab has its own print button. */
   .print-title { display: block; font-size: 18pt; margin: 12px 0 6px; }
   .section { break-inside: avoid; border-color: #999; }
   .done { color: #555; }
+  .timeline { background: #eee; }
+  .timeline .block { background: #777; }
 }

@@ -364,6 +364,213 @@ document.getElementById("addForm").addEventListener("submit", e => {
 });
 renderPacking();
 
+/* ---------- Calendar ---------- */
+const CAL_KEY = "tripCalendar2026";
+// Days from 6 to 15 October 2026, as "2026-10-06" ... "2026-10-15".
+const calDays = Array.from({ length: 10 }, (_, i) => `2026-10-${String(6 + i).padStart(2, "0")}`);
+// The return date can change, so the user can remove the days from 12 October.
+const FIRST_REMOVABLE_DAY = "2026-10-12";
+
+// Known travel times. The night train goes past midnight, so it has one part on each day.
+// Times are local. 23:59 is the end of the day.
+const calDefaults = [
+  { id: "d-train-kyiv-1", day: "2026-10-06", start: "10:18", end: "23:59", text: "🚆 Потяг Київ → Будапешт (відправлення о 10:18)" },
+  { id: "d-train-kyiv-2", day: "2026-10-07", start: "00:00", end: "06:00", text: "🚆 Потяг Київ → Будапешт (прибуття о 6:00)" },
+  { id: "d-plane-bud-lon", day: "2026-10-08", start: "09:35", end: "11:10", text: "✈️ Літак Будапешт → Лондон" }
+];
+
+function loadCal() {
+  let c = {};
+  try { c = JSON.parse(localStorage.getItem(CAL_KEY) || "{}"); } catch (e) {}
+  const cal = { events: c.events || [], removed: c.removed || [], removedDays: c.removedDays || [] };
+  // Add each known event once. An event that the user removed does not come back.
+  calDefaults.forEach(d => {
+    if (!cal.removed.includes(d.id) && !cal.events.some(ev => ev.id === d.id)) cal.events.push({ ...d });
+  });
+  return cal;
+}
+let cal = loadCal();
+function saveCal() {
+  try { localStorage.setItem(CAL_KEY, JSON.stringify(cal)); } catch (e) {}
+}
+
+function toMinutes(time) {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function dayLabel(day) {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("uk-UA", { weekday: "short", day: "numeric", month: "long" });
+}
+
+function todayKey() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+
+// Makes the start, end, and text fields. Used by the add form and by the edit form.
+function eventFields(ev) {
+  const start = document.createElement("input");
+  start.type = "time";
+  start.required = true;
+  start.value = ev ? ev.start : "";
+  start.setAttribute("aria-label", "Початок");
+  const end = document.createElement("input");
+  end.type = "time";
+  end.required = true;
+  end.value = ev ? ev.end : "";
+  end.setAttribute("aria-label", "Кінець");
+  const text = document.createElement("input");
+  text.type = "text";
+  text.required = true;
+  text.pattern = ".*\\S.*";
+  text.placeholder = "Що плануємо…";
+  text.autocomplete = "off";
+  text.value = ev ? ev.text : "";
+  text.setAttribute("aria-label", "Активність");
+  // The end time must be later than the start time.
+  const checkOrder = () => end.setCustomValidity(
+    start.value && end.value && toMinutes(end.value) <= toMinutes(start.value) ? "Кінець має бути пізніше за початок" : ""
+  );
+  start.addEventListener("input", checkOrder);
+  end.addEventListener("input", checkOrder);
+  return { start, end, text };
+}
+
+function renderCalendar() {
+  const root = document.getElementById("calDays");
+  root.innerHTML = "";
+  const today = todayKey();
+  calDays.forEach(day => {
+    // A removed day keeps its events, so they come back when the user restores the day.
+    if (cal.removedDays.includes(day)) return;
+    const events = cal.events
+      .filter(ev => ev.day === day)
+      .sort((a, b) => toMinutes(a.start) - toMinutes(b.start) || toMinutes(a.end) - toMinutes(b.end));
+
+    const div = document.createElement("div");
+    div.className = "section cal-day" + (day === today ? " today" : "");
+    const h2 = document.createElement("h2");
+    h2.textContent = dayLabel(day);
+    if (day >= FIRST_REMOVABLE_DAY) {
+      const rmDay = document.createElement("button");
+      rmDay.type = "button";
+      rmDay.className = "icon-btn remove-btn section-tools";
+      rmDay.textContent = "×";
+      rmDay.title = "Видалити день";
+      rmDay.setAttribute("aria-label", `Видалити день «${h2.textContent}»`);
+      rmDay.addEventListener("click", () => {
+        if (!confirm(`Видалити день «${h2.textContent}»?`)) return;
+        cal.removedDays.push(day);
+        saveCal();
+        renderCalendar();
+      });
+      div.appendChild(rmDay);
+    }
+    div.appendChild(h2);
+
+    // A bar for the full day (00:00 to 24:00) that shows the reserved time.
+    const timeline = document.createElement("div");
+    timeline.className = "timeline";
+    events.forEach(ev => {
+      const block = document.createElement("div");
+      block.className = "block";
+      block.style.left = toMinutes(ev.start) / 1440 * 100 + "%";
+      block.style.width = (toMinutes(ev.end) - toMinutes(ev.start)) / 1440 * 100 + "%";
+      block.title = `${ev.start}–${ev.end} ${ev.text}`;
+      timeline.appendChild(block);
+    });
+    const ticks = document.createElement("div");
+    ticks.className = "ticks";
+    ticks.innerHTML = "<span>0</span><span>6</span><span>12</span><span>18</span><span>24</span>";
+    div.append(timeline, ticks);
+
+    events.forEach(ev => {
+      const overlaps = events.some(o => o !== ev &&
+        toMinutes(o.start) < toMinutes(ev.end) && toMinutes(ev.start) < toMinutes(o.end));
+      const row = document.createElement("div");
+      row.className = "cal-event" + (overlaps ? " overlap" : "");
+      const time = document.createElement("span");
+      time.className = "cal-time";
+      time.textContent = `${ev.start}–${ev.end}`;
+      const text = document.createElement("span");
+      text.className = "item-text";
+      text.textContent = ev.text;
+      if (overlaps) text.title = "Час перетинається з іншою активністю";
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "icon-btn";
+      editBtn.textContent = "✎";
+      editBtn.title = "Редагувати";
+      editBtn.setAttribute("aria-label", `Редагувати «${ev.text}»`);
+      const rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "icon-btn remove-btn";
+      rmBtn.textContent = "×";
+      rmBtn.title = "Видалити";
+      rmBtn.setAttribute("aria-label", `Видалити «${ev.text}»`);
+      row.append(time, text, editBtn, rmBtn);
+
+      editBtn.addEventListener("click", () => {
+        const f = eventFields(ev);
+        const form = document.createElement("form");
+        form.className = "cal-form";
+        const save = document.createElement("button");
+        save.type = "submit";
+        save.textContent = "✓";
+        save.title = "Зберегти";
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "Скасувати";
+        cancel.addEventListener("click", renderCalendar);
+        form.append(f.start, f.end, f.text, save, cancel);
+        form.addEventListener("submit", e => {
+          e.preventDefault();
+          Object.assign(ev, { start: f.start.value, end: f.end.value, text: f.text.value.trim() });
+          saveCal();
+          renderCalendar();
+        });
+        form.addEventListener("keydown", e => { if (e.key === "Escape") renderCalendar(); });
+        row.replaceWith(form);
+        f.text.focus();
+      });
+      rmBtn.addEventListener("click", () => {
+        cal.events = cal.events.filter(o => o !== ev);
+        if (calDefaults.some(d => d.id === ev.id)) cal.removed.push(ev.id);
+        saveCal();
+        renderCalendar();
+      });
+      div.appendChild(row);
+    });
+
+    const f = eventFields(null);
+    const form = document.createElement("form");
+    form.className = "cal-form";
+    const add = document.createElement("button");
+    add.type = "submit";
+    add.textContent = "Додати";
+    form.append(f.start, f.end, f.text, add);
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      cal.events.push({ id: "e-" + Date.now(), day, start: f.start.value, end: f.end.value, text: f.text.value.trim() });
+      saveCal();
+      renderCalendar();
+    });
+    div.appendChild(form);
+    root.appendChild(div);
+  });
+
+  document.getElementById("restoreDays").style.display = cal.removedDays.length ? "" : "none";
+}
+
+function restoreDays() {
+  cal.removedDays = [];
+  saveCal();
+  renderCalendar();
+}
+renderCalendar();
+
 /* ---------- Tabs ---------- */
 function showTab(name) {
   document.querySelectorAll(".tab").forEach(t => {
@@ -377,4 +584,4 @@ function showTab(name) {
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
 let startTab = "trip";
 try { startTab = localStorage.getItem("tripActiveTab") || "trip"; } catch (e) {}
-showTab(startTab === "packing" ? "packing" : "trip");
+showTab(["packing", "calendar"].includes(startTab) ? startTab : "trip");

@@ -41,11 +41,15 @@ const sections = [
     items: ["Квитки на потяг Ньюарк → Лондон", "Готель у Лондоні на 10 → 14 жовтня"]
   },
   {
+    key: "lon-bud",
+    editable: true,
     title: "🇬🇧 Лондон → 🇭🇺 Будапешт",
     date: "14 жовтня",
     items: ["Квитки на літак Лондон → Будапешт"]
   },
   {
+    key: "bud-kyiv",
+    editable: true,
     title: "🇭🇺 Будапешт → 🇺🇦 Київ",
     date: "14 жовтня",
     items: ["Квитки на потяг Будапешт → Київ"]
@@ -55,48 +59,142 @@ const sections = [
 const root = document.getElementById("sections");
 const saved = JSON.parse(localStorage.getItem("tripChecklist2026") || "{}");
 
-let idx = 0;
-sections.forEach(section => {
-  const div = document.createElement("div");
-  div.className = "section";
-  div.innerHTML = `<h2>${section.title}</h2><div class="date">${section.date}</div>`;
-  section.items.forEach(item => {
-    const id = "item-" + idx++;
-    const label = document.createElement("label");
-    const expenseId = id + "-expense";
-    const noExpense = item === "Готель у Лондоні на 10 → 14 жовтня";
-    label.innerHTML = `<input type="checkbox" id="${id}"><span>${item}</span>` +
-      (noExpense ? "" : ` <span class="expense-wrap"><input type="checkbox" id="${expenseId}" class="expense-check"><span class="expense-label">expense report filed</span></span>`);
-    const checkbox = label.querySelector(`#${id}`);
-    checkbox.checked = !!saved[id];
-    if (checkbox.checked) label.querySelector("span").classList.add("done");
-    checkbox.addEventListener("change", () => {
-      saved[id] = checkbox.checked;
-      localStorage.setItem("tripChecklist2026", JSON.stringify(saved));
+// Edits and removals for editable sections: { edits: {key: {title, date, items}}, removed: [key] }
+const TRIP_EDITS_KEY = "tripSectionEdits2026";
+function loadTripEdits() {
+  try {
+    const t = JSON.parse(localStorage.getItem(TRIP_EDITS_KEY) || "{}");
+    return { edits: t.edits || {}, removed: t.removed || [] };
+  } catch (e) {
+    return { edits: {}, removed: [] };
+  }
+}
+let tripEdits = loadTripEdits();
+function saveTripEdits() {
+  try { localStorage.setItem(TRIP_EDITS_KEY, JSON.stringify(tripEdits)); } catch (e) {}
+}
+
+function renderTrip() {
+  root.innerHTML = "";
+  let idx = 0;
+  sections.forEach(original => {
+    // Keep item ids stable even when a section is removed.
+    const firstIdx = idx;
+    idx += original.items.length;
+    if (original.editable && tripEdits.removed.includes(original.key)) return;
+    const section = { ...original, ...(original.editable ? tripEdits.edits[original.key] : null) };
+
+    const div = document.createElement("div");
+    div.className = "section";
+    const h2 = document.createElement("h2");
+    h2.textContent = section.title;
+    const date = document.createElement("div");
+    date.className = "date";
+    date.textContent = section.date;
+    div.append(h2, date);
+
+    const textSpans = [];
+    section.items.forEach((item, i) => {
+      const id = "item-" + (firstIdx + i);
+      const label = document.createElement("label");
+      const expenseId = id + "-expense";
+      const noExpense = item === "Готель у Лондоні на 10 → 14 жовтня";
+      label.innerHTML = `<input type="checkbox" id="${id}"><span></span>` +
+        (noExpense ? "" : ` <span class="expense-wrap"><input type="checkbox" id="${expenseId}" class="expense-check"><span class="expense-label">expense report filed</span></span>`);
       const textSpan = label.querySelector(":scope > span");
-      if (textSpan) textSpan.classList.toggle("done", checkbox.checked);
-      updateProgress();
+      textSpan.textContent = item;
+      textSpans.push(textSpan);
+      const checkbox = label.querySelector(`#${id}`);
+      checkbox.checked = !!saved[id];
+      if (checkbox.checked) textSpan.classList.add("done");
+      checkbox.addEventListener("change", () => {
+        saved[id] = checkbox.checked;
+        localStorage.setItem("tripChecklist2026", JSON.stringify(saved));
+        textSpan.classList.toggle("done", checkbox.checked);
+        updateProgress();
+      });
+      // While editing, a click on the text must not toggle the checkbox.
+      label.addEventListener("click", e => {
+        if (div.classList.contains("editing")) e.preventDefault();
+      });
+
+      if (!noExpense) {
+        const expenseCheckbox = label.querySelector(`#${expenseId}`);
+        expenseCheckbox.checked = !!saved[expenseId];
+        expenseCheckbox.addEventListener("change", () => {
+          saved[expenseId] = expenseCheckbox.checked;
+          localStorage.setItem("tripChecklist2026", JSON.stringify(saved));
+        });
+      }
+      div.appendChild(label);
     });
 
-    if (!noExpense) {
-      const expenseCheckbox = label.querySelector(`#${expenseId}`);
-      expenseCheckbox.checked = !!saved[expenseId];
-      expenseCheckbox.addEventListener("change", () => {
-        saved[expenseId] = expenseCheckbox.checked;
-        localStorage.setItem("tripChecklist2026", JSON.stringify(saved));
+    if (original.editable) {
+      const tools = document.createElement("span");
+      tools.className = "section-tools";
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "icon-btn";
+      editBtn.textContent = "✎";
+      editBtn.title = "Редагувати";
+      editBtn.setAttribute("aria-label", `Редагувати «${section.title}»`);
+      const rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "icon-btn remove-btn";
+      rmBtn.textContent = "×";
+      rmBtn.title = "Видалити етап";
+      rmBtn.setAttribute("aria-label", `Видалити «${section.title}»`);
+      tools.append(editBtn, rmBtn);
+      div.insertBefore(tools, h2);
+
+      const fields = [h2, date, ...textSpans];
+      const finishEdit = () => {
+        tripEdits.edits[original.key] = {
+          title: h2.textContent.trim() || original.title,
+          date: date.textContent.trim(),
+          items: textSpans.map((s, i) => s.textContent.trim() || original.items[i])
+        };
+        saveTripEdits();
+        renderTrip();
+      };
+      editBtn.addEventListener("click", () => {
+        if (div.classList.contains("editing")) return finishEdit();
+        div.classList.add("editing");
+        fields.forEach(f => f.contentEditable = "true");
+        editBtn.textContent = "✓";
+        editBtn.title = "Зберегти";
+        h2.focus();
+      });
+      fields.forEach(f => f.addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); finishEdit(); }
+        if (e.key === "Escape") renderTrip();
+      }));
+      rmBtn.addEventListener("click", () => {
+        if (!confirm(`Видалити етап «${section.title}»?`)) return;
+        tripEdits.removed.push(original.key);
+        saveTripEdits();
+        renderTrip();
       });
     }
-    div.appendChild(label);
+    root.appendChild(div);
   });
-  root.appendChild(div);
-});
+
+  document.getElementById("restoreTrip").style.display = tripEdits.removed.length ? "" : "none";
+  updateProgress();
+}
+
+function restoreTrip() {
+  tripEdits.removed = [];
+  saveTripEdits();
+  renderTrip();
+}
 
 function updateProgress() {
   const boxes = [...document.querySelectorAll('#sections input[type="checkbox"]')];
   const done = boxes.filter(x => x.checked).length;
   document.getElementById("count").textContent = done;
   document.getElementById("total").textContent = boxes.length;
-  document.getElementById("fill").style.width = (done / boxes.length * 100) + "%";
+  document.getElementById("fill").style.width = (boxes.length ? done / boxes.length * 100 : 0) + "%";
 }
 function resetAll() {
   document.querySelectorAll('#sections input[type="checkbox"]').forEach(x => {
@@ -107,7 +205,7 @@ function resetAll() {
   localStorage.removeItem("tripChecklist2026");
   updateProgress();
 }
-updateProgress();
+renderTrip();
 
 /* ---------- Packing checklist ---------- */
 const PACK_KEY = "tripPacking2026";

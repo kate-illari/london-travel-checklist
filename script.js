@@ -629,11 +629,16 @@ async function saveCalendarPdf() {
     // On a phone, the window is narrow. Thus draw the copy in a window as wide as the copy.
     // Safari on iPhone cannot make a canvas with more than 16,777,216 pixels,
     // so a large copy gets a smaller scale.
+    // If the page is scrolled down, html2canvas moves the picture down by the same distance
+    // and cuts the bottom. Thus the scroll position is set to 0.
     const mm = px => px * 25.4 / 96;
     const scale = Math.min(2, Math.sqrt(16e6 / (width * height)));
     const canvas = await html2pdf().set({
       margin: 0,
-      html2canvas: { scale, backgroundColor: "#fff", windowWidth: width, windowHeight: height },
+      html2canvas: {
+        scale, backgroundColor: "#fff",
+        windowWidth: width, windowHeight: height, scrollX: 0, scrollY: 0
+      },
       jsPDF: { unit: "mm", format: [mm(width), mm(height) + 1], orientation: "landscape" }
     }).from(page).toCanvas().get("canvas");
     // Step 2: put the picture on one A4 page.

@@ -119,6 +119,8 @@ button:hover { background: var(--card-hover); color: var(--text); }
 .pdf-export {
   --card: #fff; --text: #000; --muted: #555; --border: #ccc; --accent: #000;
   box-sizing: border-box; padding: 4px; background: #fff; color: #000; color-scheme: light;
+  /* Phone browsers can make text bigger in wide blocks. Then the days do not fit the page. */
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
 }
 .pdf-export > h2 { margin: 0 0 8px; font-size: 22px; }
 .pdf-export .pdf-days { display: grid; align-items: start; gap: 8px; }

@@ -626,10 +626,14 @@ async function saveCalendarPdf() {
 
     // Step 1: draw the copy at its full width. The library draws a box as wide as
     // the jsPDF page, so give it a page with the same size as the copy.
+    // On a phone, the window is narrow. Thus draw the copy in a window as wide as the copy.
+    // Safari on iPhone cannot make a canvas with more than 16,777,216 pixels,
+    // so a large copy gets a smaller scale.
     const mm = px => px * 25.4 / 96;
+    const scale = Math.min(2, Math.sqrt(16e6 / (width * height)));
     const canvas = await html2pdf().set({
       margin: 0,
-      html2canvas: { scale: 2, backgroundColor: "#fff" },
+      html2canvas: { scale, backgroundColor: "#fff", windowWidth: width, windowHeight: height },
       jsPDF: { unit: "mm", format: [mm(width), mm(height) + 1], orientation: "landscape" }
     }).from(page).toCanvas().get("canvas");
     // Step 2: put the picture on one A4 page.
